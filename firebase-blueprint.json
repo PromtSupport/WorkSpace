@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "Account": {
+      "title": "Shared Account",
+      "description": "Shared credentials for services",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "login": { "type": "string" },
+        "password": { "type": "string" },
+        "serviceUrl": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "login", "password"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Project task with status and importance",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["todo", "in_progress", "completed"] },
+        "importance": { "type": "string", "enum": ["low", "medium", "high"] },
+        "deadline": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "creatorId": { "type": "string" },
+        "assigneeId": { "type": "string" }
+      },
+      "required": ["title", "status", "importance"]
+    },
+    "CalendarEvent": {
+      "title": "Calendar Event",
+      "description": "Shared event or milestone",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "start": { "type": "string", "format": "date-time" },
+        "end": { "type": "string", "format": "date-time" },
+        "location": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "start", "end"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "Real-time message between users",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "senderId", "senderName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "accounts": {
+      "schema": "Account",
+      "description": "Collection of shared accounts"
+    },
+    "tasks": {
+      "schema": "Task",
+      "description": "Collection of project tasks"
+    },
+    "calendar": {
+      "schema": "CalendarEvent",
+      "description": "Collection of shared events"
+    },
+    "messages": {
+      "schema": "ChatMessage",
+      "description": "Collection of chat messages"
+    }
+  }
+}

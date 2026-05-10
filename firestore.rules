@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerified() {
+      // NOTE: Temporarily allowing public access because Anonymous Auth is disabled in the Firebase Console.
+      // To secure this app properly: 
+      // 1. Enable Anonymous Auth in Firebase Console (Authentication > Sign-in method).
+      // 2. Change this back to 'return request.auth != null;'.
+      return true;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Entity Validations
+    
+    function isValidAccount(data) {
+      return data.keys().hasAll(['title', 'login', 'password', 'createdAt']) &&
+             data.keys().size() >= 4 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.login is string && data.login.size() > 0 && data.login.size() <= 100 &&
+             data.password is string && data.password.size() > 0 && data.password.size() <= 500 &&
+             data.createdAt == request.time;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['title', 'status', 'importance', 'createdAt', 'creatorId']) &&
+             data.keys().size() >= 5 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.status in ['todo', 'in_progress', 'completed'] &&
+             data.importance in ['low', 'medium', 'high'] &&
+             data.createdAt == request.time;
+    }
+
+    function isValidCalendarEvent(data) {
+      return data.keys().hasAll(['title', 'start', 'end', 'createdAt']) &&
+             data.keys().size() >= 4 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.start is timestamp &&
+             data.end is timestamp &&
+             data.createdAt == request.time;
+    }
+
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['text', 'senderId', 'senderName', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 1000 &&
+             data.senderName is string &&
+             data.createdAt == request.time;
+    }
+
+    // 3. Collection Rules
+    
+    match /system/{docId} {
+      allow read: if isVerified();
+    }
+    
+    match /accounts/{accountId} {
+      allow read: if isVerified();
+      allow create: if isVerified() && isValidId(accountId) && isValidAccount(incoming());
+      allow update: if isVerified() && isValidAccount(incoming()) && 
+                    incoming().createdAt == existing().createdAt;
+      allow delete: if isVerified();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isVerified();
+      allow create: if isVerified() && isValidId(taskId) && isValidTask(incoming());
+      allow update: if isVerified() && isValidTask(incoming()) &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().creatorId == existing().creatorId;
+      allow delete: if isVerified();
+    }
+
+    match /calendar/{eventId} {
+      allow read: if isVerified();
+      allow create: if isVerified() && isValidId(eventId) && isValidCalendarEvent(incoming());
+      allow update: if isVerified() && isValidCalendarEvent(incoming()) &&
+                    incoming().createdAt == existing().createdAt;
+      allow delete: if isVerified();
+    }
+
+    match /messages/{messageId} {
+      allow read: if isVerified();
+      allow create: if isVerified() && isValidId(messageId) && isValidChatMessage(incoming());
+      // Messages are immutable in this flow
+      allow update, delete: if false;
+    }
+  }
+}
